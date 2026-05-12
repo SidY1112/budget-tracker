@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
+const supabase = createClient()
 
 export default async function Home() {
   const { data, error } = await supabase.from('categories').select('*')

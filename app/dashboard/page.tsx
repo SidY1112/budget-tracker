@@ -2,20 +2,26 @@ import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses } from '@/lib/db/dashboard'
 
+// Entry point for the dashboard — server-rendered so data is ready before the page reaches the browser
 export default async function DashboardPage() {
   const supabase = createSupabaseServerClient()
+
+  // getUser() re-validates the session on every request rather than trusting a potentially stale cookie
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Unauthenticated users have no data to show, so redirect rather than render an empty/broken state
   if (!user) {
     redirect('/signup')
   }
 
+  // All three queries are independent, so running them in parallel cuts load time to the slowest one
   const [totalIncome, totalExpenses, recentExpenses] = await Promise.all([
     getMonthlyIncome(user.id),
     getMonthlyExpenses(user.id),
     getRecentExpenses(user.id),
   ])
 
+  // 'default' locale keeps the label consistent regardless of the server's locale setting
   const now = new Date()
   const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' })
 

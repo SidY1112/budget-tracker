@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code conventions
+
+**Function comments:** Add one short comment above every function explaining the *why* — the reason it exists, a constraint, or anything non-obvious. The function name covers the *what*; the comment covers the *why*.
+
 ## Commands
 
 ```bash

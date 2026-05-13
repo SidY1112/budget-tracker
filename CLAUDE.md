@@ -28,7 +28,12 @@ No test suite is configured yet.
 
 `lib/supabase.js` exports a single `createClient()` that returns a browser client via `createBrowserClient` from `@supabase/ssr`. Required env vars: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (set in `.env.local`).
 
-**Important:** Two client files exist — keep them separate. `lib/supabase-server.js` exports `createSupabaseServerClient()` (uses `next/headers`, server-only). Never import `lib/supabase-server.js` from a Client Component — `next/headers` will break the client bundle.
+**Important:** Two client files exist — always use the correct one:
+
+- **Server Components / Route Handlers:** `import { createSupabaseServerClient } from '@/lib/supabase-server'`
+- **Client Components:** `import { createClient } from '@/lib/supabase'`
+
+Never import `lib/supabase-server.js` from a Client Component — `next/headers` will break the client bundle.
 
 ### Auth Flow
 

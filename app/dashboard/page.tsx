@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses } from '@/lib/db/dashboard'
+import LogoutButton from '@/components/LogoutButton'
 
 // Entry point for the dashboard — server-rendered so data is ready before the page reaches the browser
 export default async function DashboardPage() {
@@ -27,6 +28,9 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <LogoutButton />
+      </div>
       <h1>Dashboard — {monthLabel}</h1>
 
       <section>

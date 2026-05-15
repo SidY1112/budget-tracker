@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import DatePicker from '@/components/DatePicker'
 
 type Category = {
   id: string
@@ -22,9 +23,9 @@ type Props = {
   userId: string
 }
 
-// Returns today's date as a YYYY-MM-DD string, used to cap the date input and validate submissions
+// Returns today's date as YYYY-MM-DD for submit-time validation — the UI cap is handled by DatePicker
 function todayISO() {
-  return new Date().toISOString().split('T')[0]
+  return new Date().toISOString().slice(0, 10)
 }
 
 // Handles all expense form state and submission on the client — kept separate from the server page
@@ -119,12 +120,7 @@ export default function AddExpenseForm({ categories, userId }: Props) {
         step="0.01"
         onChange={handleAmountChange}
       />
-      <input
-        type="date"
-        value={date}
-        max={todayISO()}
-        onChange={(e) => setDate(e.target.value)}
-      />
+      <DatePicker value={date} onChange={setDate} />
       <input
         type="text"
         placeholder="Description (optional)"

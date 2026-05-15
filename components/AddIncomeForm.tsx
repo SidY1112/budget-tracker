@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import DatePicker from '@/components/DatePicker'
 
 type Props = {
   userId: string
@@ -13,7 +14,7 @@ type SuccessInfo = {
   month: string
 }
 
-// Returns the current month as YYYY-MM, used to cap the month picker and validate submissions
+// Returns the current month as YYYY-MM for submit-time validation — the UI cap is handled by DatePicker
 function currentMonthISO() {
   return new Date().toISOString().slice(0, 7)
 }
@@ -103,12 +104,7 @@ export default function AddIncomeForm({ userId }: Props) {
         step="0.01"
         onChange={handleAmountChange}
       />
-      <input
-        type="month"
-        value={month}
-        max={currentMonthISO()}
-        onChange={(e) => setMonth(e.target.value)}
-      />
+      <DatePicker value={month} onChange={setMonth} mode="month" />
       <button onClick={handleSubmit}>Add Income</button>
     </div>
   )

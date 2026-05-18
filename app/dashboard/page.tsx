@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgets } from '@/lib/db/dashboard'
+import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgetProgress } from '@/lib/db/dashboard'
 
-type Budget = {
+type BudgetProgress = {
   id: string
+  category_id: string
   monthly_limit: number
   expiration_date: string | null
+  spent: number
   categories: { name: string; icon: string | null }
 }
 import LogoutButton from '@/components/LogoutButton'
@@ -27,7 +29,7 @@ export default async function DashboardPage() {
     getMonthlyIncome(user.id),
     getMonthlyExpenses(user.id),
     getRecentExpenses(user.id),
-    getBudgets(user.id) as unknown as Promise<Budget[]>,
+    getBudgetProgress(user.id) as unknown as Promise<BudgetProgress[]>,
   ])
 
   // 'default' locale keeps the label consistent regardless of the server's locale setting
@@ -45,29 +47,35 @@ export default async function DashboardPage() {
         <h2>This Month</h2>
         <p>Total Income: ${totalIncome.toFixed(2)}</p>
         <p>Total Expenses: ${totalExpenses.toFixed(2)}</p>
-        <p>Net: ${(totalIncome - totalExpenses).toFixed(2)}</p>
+        <p>Remaining Balance: ${(totalIncome - totalExpenses).toFixed(2)}</p>
       </section>
 
       <section>
-        <h2>Budgets</h2>
+        <h2>Budget Progress</h2>
         {budgets.length === 0 ? (
           <p>No budgets set yet.</p>
         ) : (
           <ul>
-            {budgets.map((budget) => (
-              <li key={budget.id}>
-                <span>
-                  {budget.categories.icon ? `${budget.categories.icon} ` : ''}
-                  {budget.categories.name}
-                </span>
-                <span>${Number(budget.monthly_limit).toFixed(2)}/month</span>
-                <span>
-                  {budget.expiration_date
-                    ? `Expires ${budget.expiration_date}`
-                    : 'No expiration'}
-                </span>
-              </li>
-            ))}
+            {budgets.map((budget) => {
+              const remaining = budget.monthly_limit - budget.spent
+              const overBudget = budget.spent > budget.monthly_limit
+              return (
+                <li key={budget.id}>
+                  <span>
+                    {budget.categories.icon ? `${budget.categories.icon} ` : ''}
+                    {budget.categories.name}
+                  </span>
+                  <span>
+                    ${budget.spent.toFixed(2)} spent of ${Number(budget.monthly_limit).toFixed(2)} limit
+                  </span>
+                  <span>
+                    {overBudget
+                      ? `Over budget by $${Math.abs(remaining).toFixed(2)}`
+                      : `$${remaining.toFixed(2)} remaining`}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

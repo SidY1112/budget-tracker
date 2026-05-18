@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgetProgress } from '@/lib/db/dashboard'
+import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgetProgress, getChartExpenses, getCategories } from '@/lib/db/dashboard'
+import LogoutButton from '@/components/LogoutButton'
+import Charts from '@/components/Charts'
 
 type BudgetProgress = {
   id: string
@@ -10,7 +12,9 @@ type BudgetProgress = {
   spent: number
   categories: { name: string; icon: string | null }
 }
-import LogoutButton from '@/components/LogoutButton'
+
+type ChartExpense = { date: string; amount: number; category_id: string }
+type ChartCategory = { id: string; name: string; icon: string | null }
 
 // Entry point for the dashboard — server-rendered so data is ready before the page reaches the browser
 export default async function DashboardPage() {
@@ -24,13 +28,20 @@ export default async function DashboardPage() {
     redirect('/signup')
   }
 
-  // All four queries are independent, so running them in parallel cuts load time to the slowest one
-  const [totalIncome, totalExpenses, recentExpenses, budgets] = await Promise.all([
+  // All six queries are independent, so running them in parallel cuts load time to the slowest one
+  const [totalIncome, totalExpenses, recentExpenses, budgets, chartExpenses, allCategories] = await Promise.all([
     getMonthlyIncome(user.id),
     getMonthlyExpenses(user.id),
     getRecentExpenses(user.id),
     getBudgetProgress(user.id) as unknown as Promise<BudgetProgress[]>,
+    getChartExpenses(user.id) as unknown as Promise<ChartExpense[]>,
+    getCategories() as unknown as Promise<ChartCategory[]>,
   ])
+
+  const budgetsForCharts = budgets.map((b) => ({
+    category_id: b.category_id,
+    monthly_limit: Number(b.monthly_limit),
+  }))
 
   // 'default' locale keeps the label consistent regardless of the server's locale setting
   const now = new Date()
@@ -97,6 +108,8 @@ export default async function DashboardPage() {
           </ul>
         )}
       </section>
+
+      <Charts expenses={chartExpenses} categories={allCategories} budgets={budgetsForCharts} />
     </div>
   )
 }

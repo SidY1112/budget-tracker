@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses } from '@/lib/db/dashboard'
+import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgets } from '@/lib/db/dashboard'
+
+type Budget = {
+  id: string
+  monthly_limit: number
+  expiration_date: string | null
+  categories: { name: string; icon: string | null }
+}
 import LogoutButton from '@/components/LogoutButton'
 
 // Entry point for the dashboard — server-rendered so data is ready before the page reaches the browser
@@ -15,11 +22,12 @@ export default async function DashboardPage() {
     redirect('/signup')
   }
 
-  // All three queries are independent, so running them in parallel cuts load time to the slowest one
-  const [totalIncome, totalExpenses, recentExpenses] = await Promise.all([
+  // All four queries are independent, so running them in parallel cuts load time to the slowest one
+  const [totalIncome, totalExpenses, recentExpenses, budgets] = await Promise.all([
     getMonthlyIncome(user.id),
     getMonthlyExpenses(user.id),
     getRecentExpenses(user.id),
+    getBudgets(user.id) as unknown as Promise<Budget[]>,
   ])
 
   // 'default' locale keeps the label consistent regardless of the server's locale setting
@@ -38,6 +46,30 @@ export default async function DashboardPage() {
         <p>Total Income: ${totalIncome.toFixed(2)}</p>
         <p>Total Expenses: ${totalExpenses.toFixed(2)}</p>
         <p>Net: ${(totalIncome - totalExpenses).toFixed(2)}</p>
+      </section>
+
+      <section>
+        <h2>Budgets</h2>
+        {budgets.length === 0 ? (
+          <p>No budgets set yet.</p>
+        ) : (
+          <ul>
+            {budgets.map((budget) => (
+              <li key={budget.id}>
+                <span>
+                  {budget.categories.icon ? `${budget.categories.icon} ` : ''}
+                  {budget.categories.name}
+                </span>
+                <span>${Number(budget.monthly_limit).toFixed(2)}/month</span>
+                <span>
+                  {budget.expiration_date
+                    ? `Expires ${budget.expiration_date}`
+                    : 'No expiration'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section>

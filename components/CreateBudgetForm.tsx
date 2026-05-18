@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import DatePicker from '@/components/DatePicker'
+import Input from '@/components/ui/Input'
+import Select from '@/components/ui/Select'
+import Button from '@/components/ui/Button'
 
 type Category = {
   id: string
@@ -161,62 +164,92 @@ export default function CreateBudgetForm({ categories, userId }: Props) {
   }
 
   return (
-    <div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successInfo && (
-        <p style={{ color: 'green' }}>
-          Budget {successInfo.wasUpdate ? 'updated' : 'created'} for {successInfo.categoryName} with
-          a monthly limit of ${parseFloat(successInfo.amount).toFixed(2)}.
-        </p>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-gray-900">Create Budget</h1>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
       )}
 
+      {successInfo && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          Budget {successInfo.wasUpdate ? 'updated' : 'created'} for {successInfo.categoryName} with
+          a monthly limit of ${parseFloat(successInfo.amount).toFixed(2)}.
+        </div>
+      )}
+
+      {/* Conflict prompt replaces the form until the user confirms or cancels */}
       {conflictBudgetId ? (
-        <div>
-          <p>
-            A budget for {conflictCategoryName} already exists. Do you want to update it instead?
-          </p>
-          <button onClick={handleUpdate}>Update</button>
-          <button onClick={resetForm}>Cancel</button>
+        <div className="space-y-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            A budget for <span className="font-medium">{conflictCategoryName}</span> already exists.
+            Do you want to update it with the new limit?
+          </div>
+          <div className="flex gap-3">
+            <Button className="flex-1" onClick={handleUpdate}>
+              Yes, update it
+            </Button>
+            <Button variant="secondary" onClick={resetForm}>
+              Cancel
+            </Button>
+          </div>
         </div>
       ) : (
-        <div>
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-            <option value="">Select a category</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.icon ? `${cat.icon} ` : ''}{cat.name}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Category</label>
+            <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+                </option>
+              ))}
+            </Select>
+          </div>
 
-          <input
-            type="number"
-            placeholder="Monthly limit"
-            value={amount}
-            min="0"
-            step="0.01"
-            onChange={handleAmountChange}
-          />
-
-          <select value={duration} onChange={(e) => setDuration(e.target.value as Duration)}>
-            <option value="none">No expiration</option>
-            <option value="1">1 month</option>
-            <option value="3">3 months</option>
-            <option value="6">6 months</option>
-            <option value="12">12 months</option>
-            <option value="custom">Custom</option>
-          </select>
-
-          {duration === 'custom' && (
-            <DatePicker
-              value={customDate}
-              onChange={setCustomDate}
-              min={tomorrowISO()}
-              max={null}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Monthly limit</label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={amount}
+              min="0"
+              step="0.01"
+              onChange={handleAmountChange}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">Expiration</label>
+            <Select value={duration} onChange={(e) => setDuration(e.target.value as Duration)}>
+              <option value="none">No expiration</option>
+              <option value="1">1 month</option>
+              <option value="3">3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">12 months</option>
+              <option value="custom">Custom date</option>
+            </Select>
+          </div>
+
+          {/* Only shown when the user picks a custom end date */}
+          {duration === 'custom' && (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-gray-700">Expiration date</label>
+              <DatePicker
+                value={customDate}
+                onChange={setCustomDate}
+                min={tomorrowISO()}
+                max={null}
+              />
+            </div>
           )}
 
-          <button onClick={handleSubmit}>Create Budget</button>
+          <Button className="w-full" onClick={handleSubmit}>
+            Create Budget
+          </Button>
         </div>
       )}
     </div>

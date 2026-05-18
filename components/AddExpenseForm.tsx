@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import DatePicker from '@/components/DatePicker'
+import Input from '@/components/ui/Input'
+import Select from '@/components/ui/Select'
+import Button from '@/components/ui/Button'
 
 type Category = {
   id: string
@@ -102,48 +105,81 @@ export default function AddExpenseForm({ categories, userId }: Props) {
   }
 
   return (
-    <div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-gray-900">Add Expense</h1>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       {successInfo && (
-        <p style={{ color: 'green' }}>
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
           Added ${parseFloat(successInfo.amount).toFixed(2)}
           {successInfo.description ? ` for "${successInfo.description}"` : ''}
           {successInfo.categoryName ? ` in ${successInfo.categoryName}` : ''}
           {' '}on {successInfo.date}.
-        </p>
+        </div>
       )}
-      <input
-        type="number"
-        placeholder="Amount"
-        value={amount}
-        min="0"
-        step="0.01"
-        onChange={handleAmountChange}
-      />
-      <DatePicker value={date} onChange={setDate} />
-      <input
-        type="text"
-        placeholder="Description (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-        <option value="">Select a category</option>
-        {categories.map((cat) => (
-          <option key={cat.id} value={cat.id}>
-            {cat.icon ? `${cat.icon} ` : ''}{cat.name}
-          </option>
-        ))}
-      </select>
-      <label>
-        <input
-          type="checkbox"
-          checked={isRecurring}
-          onChange={(e) => setIsRecurring(e.target.checked)}
-        />
-        {' '}Recurring
-      </label>
-      <button onClick={handleSubmit}>Add Expense</button>
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Amount</label>
+          <Input
+            type="number"
+            placeholder="0.00"
+            value={amount}
+            min="0"
+            step="0.01"
+            onChange={handleAmountChange}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Date</label>
+          <DatePicker value={date} onChange={setDate} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">
+            Description{' '}
+            <span className="font-normal text-gray-400">(optional)</span>
+          </label>
+          <Input
+            type="text"
+            placeholder="What was this for?"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Category</label>
+          <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">Select a category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={(e) => setIsRecurring(e.target.checked)}
+            className="h-4 w-4 rounded accent-indigo-600"
+          />
+          <span className="text-sm text-gray-700">Recurring expense</span>
+        </label>
+      </div>
+
+      <Button className="w-full" onClick={handleSubmit}>
+        Add Expense
+      </Button>
     </div>
   )
 }

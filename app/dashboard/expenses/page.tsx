@@ -27,10 +27,15 @@ export default async function ExpensesPage() {
   }
 
   return (
-    <div>
-      <BackButton />
-      <h1>Add Expense</h1>
-      <AddExpenseForm categories={categories ?? []} userId={user.id} />
+    <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="mx-auto max-w-md">
+        <div className="mb-4">
+          <BackButton />
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+          <AddExpenseForm categories={categories ?? []} userId={user.id} />
+        </div>
+      </div>
     </div>
   )
 }

@@ -42,12 +42,14 @@ const PIE_COLORS = [
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316',
 ]
 
-// Converts YYYY-MM to "Jan 2026" — used for axis labels and the month navigation heading
+// Converts YYYY-MM to "Jan 2026" — specifying timeZone: 'UTC' prevents toLocaleString from
+// shifting the UTC midnight date into the previous month for users behind UTC
 function formatMonth(monthStr: string): string {
   const [year, month] = monthStr.split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, 1)).toLocaleString('default', {
     month: 'short',
     year: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
@@ -57,9 +59,11 @@ function shiftMonth(monthStr: string, delta: number): string {
   return new Date(Date.UTC(year, month - 1 + delta, 1)).toISOString().slice(0, 7)
 }
 
-// Returns the current month as YYYY-MM in UTC to match how Supabase stores dates
-function currentMonthUTC(): string {
-  return new Date().toISOString().slice(0, 7)
+// Returns the current month as YYYY-MM in local time — expense dates are stored from the date picker
+// which uses local time, so filtering against UTC would show the wrong month for non-UTC timezones
+function currentMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
 // Resolves a category display label — prefers icon + name, falls back to raw id if not found
@@ -76,10 +80,10 @@ function SpendingOverTime({ expenses }: { expenses: Expense[] }) {
 
   // Re-bucket expenses into monthly totals whenever the period or source data changes
   const data = useMemo(() => {
-    const cutoff = new Date()
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - period + 1)
-    cutoff.setUTCDate(1)
-    const cutoffStr = cutoff.toISOString().slice(0, 7)
+    // Use local time so the cutoff aligns with how expense dates are stored by the date picker
+    const now = new Date()
+    const cutoffDate = new Date(now.getFullYear(), now.getMonth() - period + 1, 1)
+    const cutoffStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}`
 
     const totals: Record<string, number> = {}
     for (const expense of expenses) {
@@ -133,7 +137,7 @@ function SpendingByCategory({
   expenses: Expense[]
   categories: Category[]
 }) {
-  const [selectedMonth, setSelectedMonth] = useState(currentMonthUTC)
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth)
 
   // Aggregate expenses for the selected month and attach resolved category names
   const data = useMemo(() => {
@@ -151,16 +155,16 @@ function SpendingByCategory({
       .sort((a, b) => b.value - a.value)
   }, [expenses, categories, selectedMonth])
 
-  const canGoNext = selectedMonth < currentMonthUTC()
+  const canGoNext = selectedMonth < currentMonth()
 
   return (
     <section>
       <h2>Spending by Category</h2>
       <div>
-        <button onClick={() => setSelectedMonth((m) => shiftMonth(m, -1))}>← Prev</button>
+        <button onClick={() => setSelectedMonth((m: string) => shiftMonth(m, -1))}>← Prev</button>
         <span style={{ margin: '0 12px' }}>{formatMonth(selectedMonth)}</span>
         <button
-          onClick={() => setSelectedMonth((m) => shiftMonth(m, 1))}
+          onClick={() => setSelectedMonth((m: string) => shiftMonth(m, 1))}
           disabled={!canGoNext}
         >
           Next →
@@ -207,10 +211,10 @@ function BudgetVsActual({
 }) {
   // Compute current-month spending per category and merge with budget limits
   const data = useMemo(() => {
-    const currentMonth = currentMonthUTC()
+    const thisMonth = currentMonth()
     const spent: Record<string, number> = {}
     for (const expense of expenses) {
-      if (expense.date.slice(0, 7) === currentMonth) {
+      if (expense.date.slice(0, 7) === thisMonth) {
         spent[expense.category_id] = (spent[expense.category_id] ?? 0) + expense.amount
       }
     }
@@ -229,7 +233,7 @@ function BudgetVsActual({
 
   return (
     <section>
-      <h2>Budget vs Actual — {formatMonth(currentMonthUTC())}</h2>
+      <h2>Budget vs Actual — {formatMonth(currentMonth())}</h2>
       {data.length === 0 ? (
         <p>No budgets set yet.</p>
       ) : (

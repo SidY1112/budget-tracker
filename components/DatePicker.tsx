@@ -1,5 +1,7 @@
 'use client'
 
+import Input from '@/components/ui/Input'
+
 type Props = {
   value: string
   onChange: (value: string) => void
@@ -22,7 +24,7 @@ export default function DatePicker({ value, onChange, mode = 'date', max, min }:
   const resolvedMax = max === undefined ? getDefaultMax(mode) : max
 
   return (
-    <input
+    <Input
       type={mode}
       value={value}
       {...(resolvedMax !== null ? { max: resolvedMax } : {})}

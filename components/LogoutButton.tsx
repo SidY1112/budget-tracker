@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import Button from '@/components/ui/Button'
 
 // Signs the user out and redirects to login — kept as a standalone component so it can be
 // dropped into any page without duplicating the signOut logic
@@ -16,5 +17,9 @@ export default function LogoutButton() {
     router.push('/login')
   }
 
-  return <button onClick={handleLogout}>Log Out</button>
+  return (
+    <Button variant="secondary" onClick={handleLogout}>
+      Log out
+    </Button>
+  )
 }

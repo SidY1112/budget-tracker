@@ -1,8 +1,19 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
-import { getMonthlyIncome, getMonthlyExpenses, getRecentExpenses, getBudgetProgress, getChartExpenses, getCategories } from '@/lib/db/dashboard'
+import {
+  getMonthlyIncome,
+  getMonthlyExpenses,
+  getRecentExpenses,
+  getBudgetProgress,
+  getChartExpenses,
+  getCategories,
+} from '@/lib/db/dashboard'
 import LogoutButton from '@/components/LogoutButton'
-import Charts from '@/components/Charts'
+import { SpendingOverTime, SpendingByCategory, BudgetVsActual } from '@/components/Charts'
+import Card from '@/components/ui/Card'
+import StatCard from '@/components/ui/StatCard'
+import ProgressBar from '@/components/ui/ProgressBar'
+import Badge from '@/components/ui/Badge'
 
 type BudgetProgress = {
   id: string
@@ -29,87 +40,136 @@ export default async function DashboardPage() {
   }
 
   // All six queries are independent, so running them in parallel cuts load time to the slowest one
-  const [totalIncome, totalExpenses, recentExpenses, budgets, chartExpenses, allCategories] = await Promise.all([
-    getMonthlyIncome(user.id),
-    getMonthlyExpenses(user.id),
-    getRecentExpenses(user.id),
-    getBudgetProgress(user.id) as unknown as Promise<BudgetProgress[]>,
-    getChartExpenses(user.id) as unknown as Promise<ChartExpense[]>,
-    getCategories() as unknown as Promise<ChartCategory[]>,
-  ])
+  const [totalIncome, totalExpenses, recentExpenses, budgets, chartExpenses, allCategories] =
+    await Promise.all([
+      getMonthlyIncome(user.id),
+      getMonthlyExpenses(user.id),
+      getRecentExpenses(user.id),
+      getBudgetProgress(user.id) as unknown as Promise<BudgetProgress[]>,
+      getChartExpenses(user.id) as unknown as Promise<ChartExpense[]>,
+      getCategories() as unknown as Promise<ChartCategory[]>,
+    ])
 
   const budgetsForCharts = budgets.map((b) => ({
     category_id: b.category_id,
     monthly_limit: Number(b.monthly_limit),
   }))
 
+  const net = totalIncome - totalExpenses
+
   // 'default' locale keeps the label consistent regardless of the server's locale setting
   const now = new Date()
   const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <div className="mx-auto max-w-7xl space-y-8 p-8">
+
+      {/* 1. Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard — {monthLabel}</h1>
         <LogoutButton />
       </div>
-      <h1>Dashboard — {monthLabel}</h1>
 
+      {/* 2. Charts — spending over time and by category side by side */}
+      <div className="grid grid-cols-2 gap-6">
+        <SpendingOverTime expenses={chartExpenses} />
+        <SpendingByCategory expenses={chartExpenses} categories={allCategories} />
+      </div>
+
+      {/* 3. Stats row */}
+      <div className="grid grid-cols-3 gap-6">
+        <StatCard label="Total Income" value={`$${totalIncome.toFixed(2)}`} />
+        <StatCard label="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} />
+        <StatCard
+          label="Remaining Balance"
+          value={`$${net.toFixed(2)}`}
+          valueColor={net >= 0 ? 'text-green-600' : 'text-red-600'}
+        />
+      </div>
+
+      {/* 4. Budget progress */}
       <section>
-        <h2>This Month</h2>
-        <p>Total Income: ${totalIncome.toFixed(2)}</p>
-        <p>Total Expenses: ${totalExpenses.toFixed(2)}</p>
-        <p>Remaining Balance: ${(totalIncome - totalExpenses).toFixed(2)}</p>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Budget Progress</h2>
+        {budgets.length === 0 ? (
+          <Card className="p-6">
+            <p className="text-sm text-gray-500">No budgets set yet.</p>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              {budgets.map((budget) => {
+                const overBudget = budget.spent > budget.monthly_limit
+                const remaining = budget.monthly_limit - budget.spent
+                return (
+                  <Card key={budget.id} className="space-y-3 p-6">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">
+                        {budget.categories.icon ? `${budget.categories.icon} ` : ''}
+                        {budget.categories.name}
+                      </span>
+                      <Badge variant={overBudget ? 'red' : 'green'}>
+                        {overBudget ? 'Over budget' : 'On track'}
+                      </Badge>
+                    </div>
+                    <ProgressBar
+                      value={budget.spent}
+                      max={budget.monthly_limit}
+                      overBudget={overBudget}
+                    />
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">${budget.spent.toFixed(2)} spent</span>
+                      <span className="text-gray-400">
+                        of ${Number(budget.monthly_limit).toFixed(2)}
+                      </span>
+                    </div>
+                    <p className={`text-sm font-medium ${overBudget ? 'text-red-600' : 'text-green-600'}`}>
+                      {overBudget
+                        ? `Over by $${Math.abs(remaining).toFixed(2)}`
+                        : `$${remaining.toFixed(2)} remaining`}
+                    </p>
+                  </Card>
+                )
+              })}
+            </div>
+            <BudgetVsActual
+              expenses={chartExpenses}
+              budgets={budgetsForCharts}
+              categories={allCategories}
+            />
+          </div>
+        )}
       </section>
 
+      {/* 5. Recent expenses */}
       <section>
-        <h2>Budget Progress</h2>
-        {budgets.length === 0 ? (
-          <p>No budgets set yet.</p>
-        ) : (
-          <ul>
-            {budgets.map((budget) => {
-              const remaining = budget.monthly_limit - budget.spent
-              const overBudget = budget.spent > budget.monthly_limit
-              return (
-                <li key={budget.id}>
-                  <span>
-                    {budget.categories.icon ? `${budget.categories.icon} ` : ''}
-                    {budget.categories.name}
-                  </span>
-                  <span>
-                    ${budget.spent.toFixed(2)} spent of ${Number(budget.monthly_limit).toFixed(2)} limit
-                  </span>
-                  <span>
-                    {overBudget
-                      ? `Over budget by $${Math.abs(remaining).toFixed(2)}`
-                      : `$${remaining.toFixed(2)} remaining`}
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">Recent Expenses</h2>
+        <Card>
+          {recentExpenses.length === 0 ? (
+            <div className="p-6">
+              <p className="text-sm text-gray-500">No expenses recorded yet.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {recentExpenses.map((expense) => (
+                <li
+                  key={expense.id}
+                  className="flex items-center justify-between px-6 py-4"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="w-24 shrink-0 text-sm text-gray-400">{expense.date}</span>
+                    <span className="text-sm text-gray-900">{expense.description ?? '—'}</span>
+                    {expense.is_recurring && <Badge variant="gray">Recurring</Badge>}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    ${Number(expense.amount).toFixed(2)}
                   </span>
                 </li>
-              )
-            })}
-          </ul>
-        )}
+              ))}
+            </ul>
+          )}
+        </Card>
       </section>
 
-      <section>
-        <h2>Recent Expenses</h2>
-        {recentExpenses.length === 0 ? (
-          <p>No expenses recorded yet.</p>
-        ) : (
-          <ul>
-            {recentExpenses.map((expense) => (
-              <li key={expense.id}>
-                <span>{expense.date}</span>
-                <span>{expense.description ?? '—'}</span>
-                <span>${Number(expense.amount).toFixed(2)}</span>
-                {expense.is_recurring && <span>(recurring)</span>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <Charts expenses={chartExpenses} categories={allCategories} budgets={budgetsForCharts} />
     </div>
   )
 }

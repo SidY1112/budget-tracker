@@ -13,6 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import Card from '@/components/ui/Card'
 
 type Expense = {
   date: string
@@ -29,12 +30,6 @@ type Category = {
 type Budget = {
   category_id: string
   monthly_limit: number
-}
-
-type Props = {
-  expenses: Expense[]
-  categories: Category[]
-  budgets: Budget[]
 }
 
 const PIE_COLORS = [
@@ -75,12 +70,11 @@ function categoryLabel(categoryId: string, categories: Category[]): string {
 
 // Bar chart of total spending per month — expenses for 12 months are pre-loaded so filter changes
 // need no additional round-trips
-function SpendingOverTime({ expenses }: { expenses: Expense[] }) {
+export function SpendingOverTime({ expenses }: { expenses: Expense[] }) {
   const [period, setPeriod] = useState(6)
 
   // Re-bucket expenses into monthly totals whenever the period or source data changes
   const data = useMemo(() => {
-    // Use local time so the cutoff aligns with how expense dates are stored by the date picker
     const now = new Date()
     const cutoffDate = new Date(now.getFullYear(), now.getMonth() - period + 1, 1)
     const cutoffStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}`
@@ -99,38 +93,44 @@ function SpendingOverTime({ expenses }: { expenses: Expense[] }) {
   }, [expenses, period])
 
   return (
-    <section>
-      <h2>Spending Over Time</h2>
-      <div>
-        {([1, 3, 6, 12] as const).map((n) => (
-          <button
-            key={n}
-            onClick={() => setPeriod(n)}
-            style={{ fontWeight: period === n ? 'bold' : 'normal', marginRight: 8 }}
-          >
-            {n === 1 ? '1 month' : n === 12 ? '1 year' : `${n} months`}
-          </button>
-        ))}
+    <Card className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Spending Over Time</h2>
+        <div className="flex gap-1">
+          {([1, 3, 6, 12] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => setPeriod(n)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                period === n
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+            >
+              {n === 1 ? '1m' : n === 12 ? '1y' : `${n}m`}
+            </button>
+          ))}
+        </div>
       </div>
       {data.length === 0 ? (
-        <p>No expense data for this period.</p>
+        <p className="text-sm text-gray-500">No expense data for this period.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data}>
-            <XAxis dataKey="month" />
-            <YAxis tickFormatter={(v: number) => `$${v}`} />
+            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v: number) => `$${v}`} tick={{ fontSize: 12 }} />
             <Tooltip formatter={(v) => typeof v === 'number' ? [`$${v.toFixed(2)}`, 'Total'] : ['', 'Total']} />
-            <Bar dataKey="total" name="Total Expenses" fill="#6366f1" />
+            <Bar dataKey="total" name="Total Expenses" fill="#6366f1" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
-    </section>
+    </Card>
   )
 }
 
 // Donut chart of spending by category for a selected month — month navigation is handled client-side
 // using the full 12-month expense dataset so no additional fetches are needed
-function SpendingByCategory({
+export function SpendingByCategory({
   expenses,
   categories,
 }: {
@@ -158,22 +158,32 @@ function SpendingByCategory({
   const canGoNext = selectedMonth < currentMonth()
 
   return (
-    <section>
-      <h2>Spending by Category</h2>
-      <div>
-        <button onClick={() => setSelectedMonth((m: string) => shiftMonth(m, -1))}>← Prev</button>
-        <span style={{ margin: '0 12px' }}>{formatMonth(selectedMonth)}</span>
-        <button
-          onClick={() => setSelectedMonth((m: string) => shiftMonth(m, 1))}
-          disabled={!canGoNext}
-        >
-          Next →
-        </button>
+    <Card className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Spending by Category</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedMonth((m: string) => shiftMonth(m, -1))}
+            className="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          >
+            ←
+          </button>
+          <span className="text-sm font-medium text-gray-900 w-20 text-center">
+            {formatMonth(selectedMonth)}
+          </span>
+          <button
+            onClick={() => setSelectedMonth((m: string) => shiftMonth(m, 1))}
+            disabled={!canGoNext}
+            className="rounded px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            →
+          </button>
+        </div>
       </div>
       {data.length === 0 ? (
-        <p>No expenses recorded for {formatMonth(selectedMonth)}.</p>
+        <p className="text-sm text-gray-500">No expenses recorded for {formatMonth(selectedMonth)}.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={260}>
           <PieChart>
             <Pie
               data={data}
@@ -181,26 +191,26 @@ function SpendingByCategory({
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={80}
-              outerRadius={140}
+              innerRadius={70}
+              outerRadius={110}
             >
               {data.map((_, index) => (
                 <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
               ))}
             </Pie>
             <Tooltip formatter={(v) => typeof v === 'number' ? `$${v.toFixed(2)}` : ''} />
-            <Legend />
+            <Legend iconType="circle" iconSize={8} />
           </PieChart>
         </ResponsiveContainer>
       )}
-    </section>
+    </Card>
   )
 }
 
 // Grouped bar chart comparing each category's monthly limit against actual spending this month —
 // actual spending is split into two dataKeys (under/over) so each can carry its own colour in
 // the legend without needing a custom renderer
-function BudgetVsActual({
+export function BudgetVsActual({
   expenses,
   budgets,
   categories,
@@ -232,35 +242,25 @@ function BudgetVsActual({
   }, [expenses, budgets, categories])
 
   return (
-    <section>
-      <h2>Budget vs Actual — {formatMonth(currentMonth())}</h2>
+    <Card className="p-6 space-y-4">
+      <h2 className="text-lg font-semibold text-gray-900">
+        Budget vs Actual — {formatMonth(currentMonth())}
+      </h2>
       {data.length === 0 ? (
-        <p>No budgets set yet.</p>
+        <p className="text-sm text-gray-500">No budgets set yet.</p>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data}>
-            <XAxis dataKey="category" />
-            <YAxis tickFormatter={(v: number) => `$${v}`} />
+            <XAxis dataKey="category" tick={{ fontSize: 12 }} />
+            <YAxis tickFormatter={(v: number) => `$${v}`} tick={{ fontSize: 12 }} />
             <Tooltip formatter={(v) => typeof v === 'number' ? `$${v.toFixed(2)}` : ''} />
-            <Legend />
-            <Bar dataKey="budget" name="Budget" fill="#94a3b8" />
-            <Bar dataKey="actualUnder" name="Actual (under budget)" fill="#22c55e" />
-            <Bar dataKey="actualOver" name="Actual (over budget)" fill="#ef4444" />
+            <Legend iconType="circle" iconSize={8} />
+            <Bar dataKey="budget" name="Budget" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="actualUnder" name="Actual (under budget)" fill="#22c55e" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="actualOver" name="Actual (over budget)" fill="#ef4444" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
-    </section>
-  )
-}
-
-// Receives all pre-fetched data from the server page and renders all three charts —
-// filtering and month navigation are handled client-side to avoid extra round-trips
-export default function Charts({ expenses, categories, budgets }: Props) {
-  return (
-    <div>
-      <SpendingOverTime expenses={expenses} />
-      <SpendingByCategory expenses={expenses} categories={categories} />
-      <BudgetVsActual expenses={expenses} budgets={budgets} categories={categories} />
-    </div>
+    </Card>
   )
 }

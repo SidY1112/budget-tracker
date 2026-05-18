@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import DatePicker from '@/components/DatePicker'
+import Input from '@/components/ui/Input'
+import Button from '@/components/ui/Button'
 
 type Props = {
   userId: string
@@ -83,29 +85,53 @@ export default function AddIncomeForm({ userId }: Props) {
   }
 
   return (
-    <div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successInfo && (
-        <p style={{ color: 'green' }}>
-          Added ${parseFloat(successInfo.amount).toFixed(2)} from &quot;{successInfo.source}&quot; for {successInfo.month}.
-        </p>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-gray-900">Add Income</h1>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
       )}
-      <input
-        type="text"
-        placeholder="Source (e.g. Salary, Freelance)"
-        value={source}
-        onChange={(e) => setSource(e.target.value)}
-      />
-      <input
-        type="number"
-        placeholder="Amount"
-        value={amount}
-        min="0"
-        step="0.01"
-        onChange={handleAmountChange}
-      />
-      <DatePicker value={month} onChange={setMonth} mode="month" />
-      <button onClick={handleSubmit}>Add Income</button>
+
+      {successInfo && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          Added ${parseFloat(successInfo.amount).toFixed(2)} from &quot;{successInfo.source}&quot; for {successInfo.month}.
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Source</label>
+          <Input
+            type="text"
+            placeholder="e.g. Salary, Freelance"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Amount</label>
+          <Input
+            type="number"
+            placeholder="0.00"
+            value={amount}
+            min="0"
+            step="0.01"
+            onChange={handleAmountChange}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Month</label>
+          <DatePicker value={month} onChange={setMonth} mode="month" />
+        </div>
+      </div>
+
+      <Button className="w-full" onClick={handleSubmit}>
+        Add Income
+      </Button>
     </div>
   )
 }

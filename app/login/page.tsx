@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import AuthCard from '@/components/ui/AuthCard'
+import Input from '@/components/ui/Input'
+import Button from '@/components/ui/Button'
 
 // Handles credential-based login — separated from signup so each flow stays focused and easy to extend
 export default function LoginPage() {
@@ -27,25 +29,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div>
-      <h1>Log In</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button onClick={handleLogin}>Log In</button>
-      <p>
-        Don&apos;t have an account? <Link href="/signup">Sign up</Link>
-      </p>
-    </div>
+    <AuthCard
+      title="Log in"
+      footer={{ text: "Don't have an account?", linkLabel: 'Sign up', href: '/signup' }}
+    >
+      <div className="space-y-4">
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Password</label>
+          <Input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+
+        <Button className="w-full" onClick={handleLogin}>
+          Log in
+        </Button>
+      </div>
+    </AuthCard>
   )
 }

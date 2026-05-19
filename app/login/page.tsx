@@ -18,6 +18,8 @@ export default function LoginPage() {
   async function handleLogin() {
     setError('')
     const supabase = createClient()
+    // Sign out any existing session so the new session gets a clean slate
+    await supabase.auth.signOut()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
@@ -25,6 +27,7 @@ export default function LoginPage() {
       return
     }
 
+    router.refresh()
     router.push('/dashboard')
   }
 

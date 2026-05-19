@@ -1,19 +1,5 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { redirect } from 'next/navigation'
 
-export default async function Home() {
-  const supabase = createSupabaseServerClient()
-  const { data, error } = await supabase.from('categories').select('*')
-
-  if (error) {
-    console.error(error)
-    return <div>Error connecting to database</div>
-  }
-
-  return (
-    <div>
-      <h1>Budget Tracker</h1>
-      <p>Connected to Supabase successfully!</p>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </div>
-  )
+export default function Home() {
+  redirect('/login')
 }

@@ -62,7 +62,7 @@ export default async function DashboardPage() {
   const monthLabel = now.toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8">
+    <div className="mx-auto max-w-7xl space-y-8 p-4 md:p-8">
 
       {/* 1. Header */}
       <div className="flex items-center justify-between">
@@ -71,13 +71,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* 2. Charts — spending over time and by category side by side */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <SpendingOverTime expenses={chartExpenses} />
         <SpendingByCategory expenses={chartExpenses} categories={allCategories} />
       </div>
 
       {/* 3. Stats row */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <StatCard label="Total Income" value={`$${totalIncome.toFixed(2)}`} />
         <StatCard label="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} />
         <StatCard
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {budgets.map((budget) => {
                 const overBudget = budget.spent > budget.monthly_limit
                 const remaining = budget.monthly_limit - budget.spent
